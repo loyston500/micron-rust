@@ -61,7 +61,7 @@ Just like in every programming language, they take some values, process them and
 This is true for all functions here but there are some exceptions, we'll discuss about them further down.
 
 #### Set function (Int, Value) -> None
-Syntax: `s:`
+Syntax: `s:`<br/>
 This is used to set a value to the slot.
 ```r
 s:0 20 [sets value 20 to the slot 0]
@@ -76,7 +76,7 @@ s:"lol" "hi" [this will not work]
 ```
 
 #### Get function (Int) -> Value
-Syntax: `g:`
+Syntax: `g:`<br/>
 This function returns the value of the slot. Remember that all the slots come predefined with None value, so if you try to access them, you get None.
 ```r
 g:0 [returns the value of slot 0]
@@ -90,22 +90,22 @@ Since this function is going to be used a lot, you can use the short hand `.0`
 which is same as `g:0`
 
 #### Print function (Value) -> None
-Syntax: `p:`
+Syntax: `p:`<br/>
 Prints the given value.
 ```r
 p:10 [this prints 10]
-p:"never gonna give you up" [this prints what's expected]
+p:"never gonna give you up" [this prints whats expected]
 
 s:0 "hello world"
 p:.0 [prints hello world]
 ```
 
 #### Write function (Value) -> None
-Syntax: `w:`
+Syntax: `w:`<br/>
 Same as Print but it doesn't put a new line at the end.
 
 #### Add function (Value, Value) -> Value
-Syntax: `a:`
+Syntax: `a:`<br/>
 Adds two values.
 If both the values are Int then you get the sum.
 If both the values are Str then it will concat them and return.
@@ -119,7 +119,7 @@ p:a: 10 "uhh" [errors out]
 ```
 
 ####  Jump function (Str) -> !
-Syntax: `j:`
+Syntax: `j:`<br/>
 This one is a bit different. On calling, it jumps to the given label. Yeah, it's basically goto.
 ```r
 p:"Hello, "
@@ -140,7 +140,7 @@ p:"hello" [this gets evaluated]
 ```
 
 #### If function (Value, Value) -> Value | !
-Syntax: `?:`
+Syntax: `?:`<br/>
 If the first value is [truthy](#truthy-and-falsy), then the second value is (evaluated and) returned; If not, None is returned.
 
 ```r
@@ -158,7 +158,7 @@ p:"Worked!" [this gets printed]
 ```
 
 #### Equal function (Value, Value) -> Int
-Syntax: `=:`
+Syntax: `=:`<br/>
 Checks if the given values are equal, both must be of same data type, else an error is raised.
 When equal, 1 (a truthy value) is returned.
 When not equal, 0 (a falsy value) is returned.
@@ -174,7 +174,7 @@ p:=:"hello" 20 [this raises type error]
 ```
 
 #### Extract function (Str, Int) -> Str
-Syntax: `x:`
+Syntax: `x:`<br/>
 Extracts a character from the Str with the given index value. If the index is out of bounds, an empty string is returned.
 
 Example:
@@ -185,7 +185,7 @@ p:x:"hello" "1" [raises error]
 ```
 
 #### Input function () -> Str
-Syntax: `i`
+Syntax: `i`<br/>
 This function takes no argument so it doesn't require a colon (`:`) next to it.
 Used to get user input.
 
@@ -195,12 +195,12 @@ p:i [this prints the given input]
 ```
 
 #### KeyChar function () -> Str
-Syntax: `k`
+Syntax: `k`<br/>
 Same as Input function, but it doesn't need you to click enter. The given char is collected and returned.
 While implementing this function, I realised that getting a key char is an OS specific thing, and apparently in some scenarios, it'll not work on terminals of Windows.  So I've decided to leave it unimplemented. It will return None instead.
 
 #### Number function (Str) -> Int
-Syntax: `n:`
+Syntax: `n:`<br/>
 Converts the given Str to an Int (isize). On failure, an error is raised.
 
 Example:
@@ -215,7 +215,7 @@ n:123 [this raises error as well but this behaviour is subjected to change]
 ```
 
 #### Text function (Int) -> Str
-Syntax `t:`
+Syntax `t:`<br/>
 Converts the given Int to Str. On failure, an error is raised.
 
 Example:
@@ -229,7 +229,7 @@ t:"foo" [this raises error but this behaviour is subjected to change]
 ```
 
 #### EmptySlot Function () -> Int
-Syntax: `~`
+Syntax: `~`<br/>
 Returns the first empty slot (the slot which is set to None). Starting from 0 to MAX.
 
 Example:
@@ -243,7 +243,7 @@ p:~ [still prints 1 because slot 1 is unused]
 ```
 
 #### Exit function
-Syntax: `$`
+Syntax: `$`<br/>
 Halts the entire program immediately.
 
 Example:
@@ -262,7 +262,7 @@ p:"You did't enter exit"
 ```
 
 #### CatchError function (Str, Value) -> Value | !
-Syntax: `#:`
+Syntax: `#:`<br/>
 This is a special kind of jump function.
 If an error is raised while the given value gets evaluated, it jumps to the given label while also setting the error code to slot `-1`.
 Otherwise, it returns the evaluated value.
@@ -279,7 +279,7 @@ p:.-1 [-1 as described above holds the error code]
 We'll talk about error codes later.
 
 #### ThrowError function (Str) -> !
-Syntax: `!:`
+Syntax: `!:`<br/>
 Throws error with an arbitrary message.
 
 Example:
@@ -305,7 +305,7 @@ p:.-1
 ```
 
 #### Function function (Str) -> Value
-Syntax: `f:`
+Syntax: `f:`<br/>
 Works just like jump function, except it returns back to where it started on encountering either EOF or a return function.
 On encountering EOF, the function returns None.
 On encountering a return function, it essentially returns what the return function holds.
@@ -324,7 +324,7 @@ rewinds back to where the function was called
 ```
 
 #### Return function (Value)
-Syntax: `r:`
+Syntax: `r:`<br/>
  This functions returns the given value, if it's invoked by a function, then it returns it's value to it, if it's invoked during the normal execution, the program halts. The given value does get returned, you can capture it if the script is invoked by another script, but that feature is yet to be implemented.
 
 ```r
