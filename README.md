@@ -1,6 +1,6 @@
 # micron-rust
-This variant of micron is derived from the original by @Z3RYX
-This variant focuses more on strong typing, and modularization by having slightly different behaviours of some specific instructions. Also, better errors.
+This variant of micron is derived from the original by @Z3RYX.<br/>
+This variant focuses more on strong typing and modularization by having slightly different behaviours of some specific instructions. Also, better errors.<br/>
 Keep in mind that this implementation is still in development so some features are subjected to change.
 
 ## Table of content
@@ -255,10 +255,10 @@ p:":(" [this does not print]
 
 Example program that halts/exits on entering `exit`
 ```r
-w:"Enter a something: "
+w:"Enter something: "
 s:0 i
 ?:=:.0 "exit" $
-p:"You did't enter exit"
+p:"You didn't enter exit"
 ```
 
 #### CatchError function (Str, Value) -> Value | !
