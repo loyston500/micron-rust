@@ -8,7 +8,7 @@ Keep in mind that this implementation is still in development so some features a
 - [micron-rust](#micron-rust)
   * [Specification](#specification)
     + [Data Types](#data-types)
-    + [Solts](#solts)
+    + [Slots](#slots)
     + [Instructions](#instructions)
     + [Labels](#labels)
     + [Functions](#functions)
@@ -33,6 +33,7 @@ Keep in mind that this implementation is still in development so some features a
       - [Return (Value)](#return--value-)
     + [Truthy and Falsy](#truthy-and-falsy)
     + [Comments](#comments)
+    + [Errors](#errors)
 
 ## Specification
 ###  Data Types
@@ -42,7 +43,7 @@ Keep in mind that this implementation is still in development so some features a
 
 `Value` is used to indicate any data type.
 
-### Solts
+### Slots
 They are the variables of micron, denoted by a unique integer ranging from MIN to MAX of an isize.
 By default, slots hold `None` .
 
@@ -327,7 +328,7 @@ rewinds back to where the function was called
 
 #### Return (Value)
 Syntax: `r:`<br/>
- This functions returns the given value, if it's invoked by a function, then it returns it's value to it, if it's invoked during the normal execution, the program halts. The given value does get returned, you can capture it if the script is invoked by another script, but that feature is yet to be implemented.
+ This functions returns the given value, if it's invoked by a function, then it returns it's value to it, if it's invoked during the normal execution, the program halts. The given value does get returned, you can capture it if the script itself is invoked by another script, but that feature is yet to be implemented.
 
 ```r
 r:"foo"
@@ -339,7 +340,7 @@ All strings are truthy except for an empty string.
 None is always falsy.
 
 ### Comments
-`[` `]` are used to specifiy a comment. A comment can span multiple lines.
+`[` `]` are used to specify a comment. A comment can span multiple lines.
 ```haskell
 s:10 "
 hi,
@@ -351,3 +352,25 @@ I can also span multiple lines
 ]
 ```
 
+### Errors
+Each kind of error is associated with a unique Int.<br/>
+`TypeError` => `401`,  Raised when there's a type mismatch.<br/>
+`LabelError` => `402`, Raised when the label it's supposed to jump isn't defined.<br/>
+`ValueError` => `403`, Raised when the value is invalid or not supported.<br/>
+`NoSlotError` => `404`Raised if there are no empty slots available from 0 to MAX.<br/>
+`Error` => `400` Raised if there's an ambiguous error.<br/>
+
+When an error is raised, the error code is set to slot `-1`
+
+Example:
+```haskell
+#:"error" j:69 [this raises TypeError since jump function always expects an Str]
+
+;error
+?:=.-1 401 j:"typeerror"
+p:"Some error was raised"
+$
+
+;typeerror
+p:"TypeError was raised"
+```
