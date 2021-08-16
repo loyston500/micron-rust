@@ -1,9 +1,10 @@
+
 # micron-rust
 This variant of micron is derived from the original by @Z3RYX.<br/>
 This variant focuses more on strong typing and modularization by having slightly different behaviours of some specific instructions. Also, better errors.<br/>
 Keep in mind that this implementation is still in development so some features are subjected to change.
 
-## Table of content
+## Table of contents
 - [micron-rust](#micron-rust)
   * [Specification](#specification)
     + [Data Types](#data-types)
@@ -11,26 +12,27 @@ Keep in mind that this implementation is still in development so some features a
     + [Instructions](#instructions)
     + [Labels](#labels)
     + [Functions](#functions)
-      - [Set function (Int, Value) -> None](#set-function--int--value-----none)
-      - [Get function (Int) -> Value](#get-function--int-----value)
-      - [Print function (Value) -> None](#print-function--value-----none)
-      - [Write function (Value) -> None](#write-function--value-----none)
-      - [Add function (Value, Value) -> Value](#add-function--value--value-----value)
-      - [Jump function (Str) -> !](#jump-function--str------)
-      - [If function (Value, Value) -> Value | !](#if-function--value--value-----value----)
-      - [Equal function (Value, Value) -> Int](#equal-function--value--value-----int)
-      - [Extract function (Str, Int) -> Str](#extract-function--str--int-----str)
-      - [Input function () -> Str](#input-function-------str)
-      - [KeyChar function () -> Str](#keychar-function-------str)
-      - [Number function (Str) -> Int](#number-function--str-----int)
-      - [Text function (Int) -> Str](#text-function--int-----str)
-      - [EmptySlot Function () -> Int](#emptyslot-function-------int)
-      - [Exit function](#exit-function)
-      - [CatchError function (Str, Value) -> Value | !](#catcherror-function--str--value-----value----)
-      - [ThrowError function (Str) -> !](#throwerror-function--str------)
-      - [Function function (Str) -> Value](#function-function--str-----value)
-      - [Return function (Value)](#return-function--value-)
+      - [Set (Int, Value) -> None](#set--int--value-----none)
+      - [Get (Int) -> Value](#get--int-----value)
+      - [Print (Value) -> None](#print--value-----none)
+      - [Write (Value) -> None](#write--value-----none)
+      - [Add (Value, Value) -> Value](#add--value--value-----value)
+      - [Jump (Str) -> !](#jump--str------)
+      - [If (Value, Value) -> Value | !](#if--value--value-----value----)
+      - [Equal (Value, Value) -> Int](#equal--value--value-----int)
+      - [Extract (Str, Int) -> Str](#extract--str--int-----str)
+      - [Input () -> Str](#input-------str)
+      - [KeyChar () -> Str](#keychar-------str)
+      - [Number (Str) -> Int](#number--str-----int)
+      - [Text (Int) -> Str](#text--int-----str)
+      - [EmptySlot () -> Int](#emptyslot-------int)
+      - [Exit](#exit)
+      - [CatchError (Str, Value) -> Value | !](#catcherror--str--value-----value----)
+      - [ThrowError (Str) -> !](#throwerror--str------)
+      - [Function (Str) -> Value](#function--str-----value)
+      - [Return (Value)](#return--value-)
     + [Truthy and Falsy](#truthy-and-falsy)
+    + [Comments](#comments)
 
 ## Specification
 ###  Data Types
@@ -60,7 +62,7 @@ For example, `;foo`. They allow you to jump to desired locations during the exec
 Just like in every programming language, they take some values, process them and give out some values.
 This is true for all functions here but there are some exceptions, we'll discuss about them further down.
 
-#### Set function (Int, Value) -> None
+#### Set (Int, Value) -> None
 Syntax: `s:`<br/>
 This is used to set a value to the slot.
 ```r
@@ -75,7 +77,7 @@ But the slot name should always be an Int, otherwise, it'll throw an error.
 s:"lol" "hi" [this will not work]
 ```
 
-#### Get function (Int) -> Value
+#### Get (Int) -> Value
 Syntax: `g:`<br/>
 This function returns the value of the slot. Remember that all the slots come predefined with None value, so if you try to access them, you get None.
 ```r
@@ -89,7 +91,7 @@ s:1 g:0 [gets the value of slot 0 and sets it to slot 1]
 Since this function is going to be used a lot, you can use the short hand `.0`
 which is same as `g:0`
 
-#### Print function (Value) -> None
+#### Print (Value) -> None
 Syntax: `p:`<br/>
 Prints the given value.
 ```r
@@ -100,11 +102,11 @@ s:0 "hello world"
 p:.0 [prints hello world]
 ```
 
-#### Write function (Value) -> None
+#### Write (Value) -> None
 Syntax: `w:`<br/>
 Same as Print but it doesn't put a new line at the end.
 
-#### Add function (Value, Value) -> Value
+#### Add (Value, Value) -> Value
 Syntax: `a:`<br/>
 Adds two values.
 If both the values are Int then you get the sum.
@@ -118,7 +120,7 @@ p:a: "Hello, " "World" [prints Hello, World]
 p:a: 10 "uhh" [errors out]
 ```
 
-####  Jump function (Str) -> !
+####  Jump (Str) -> !
 Syntax: `j:`<br/>
 This one is a bit different. On calling, it jumps to the given label. Yeah, it's basically goto.
 ```r
@@ -139,7 +141,7 @@ p:a:"hi " j:"foo"
 p:"hello" [this gets evaluated]
 ```
 
-#### If function (Value, Value) -> Value | !
+#### If (Value, Value) -> Value | !
 Syntax: `?:`<br/>
 If the first value is [truthy](#truthy-and-falsy), then the second value is (evaluated and) returned; If not, None is returned.
 
@@ -157,7 +159,7 @@ p:"Hello!" [this line is skipped]
 p:"Worked!" [this gets printed]
 ```
 
-#### Equal function (Value, Value) -> Int
+#### Equal (Value, Value) -> Int
 Syntax: `=:`<br/>
 Checks if the given values are equal, both must be of same data type, else an error is raised.
 When equal, 1 (a truthy value) is returned.
@@ -173,7 +175,7 @@ p:=:"hello" "hi" [this prints 0]
 p:=:"hello" 20 [this raises type error]
 ```
 
-#### Extract function (Str, Int) -> Str
+#### Extract (Str, Int) -> Str
 Syntax: `x:`<br/>
 Extracts a character from the Str with the given index value. If the index is out of bounds, an empty string is returned.
 
@@ -184,7 +186,7 @@ p:x:"hello" 100 [prints just a newline because the extract function returns an e
 p:x:"hello" "1" [raises error]
 ```
 
-#### Input function () -> Str
+#### Input () -> Str
 Syntax: `i`<br/>
 This function takes no argument so it doesn't require a colon (`:`) next to it.
 Used to get user input.
@@ -194,12 +196,12 @@ Example:
 p:i [this prints the given input]
 ```
 
-#### KeyChar function () -> Str
+#### KeyChar () -> Str
 Syntax: `k`<br/>
 Same as Input function, but it doesn't need you to click enter. The given char is collected and returned.
 While implementing this function, I realised that getting a key char is an OS specific thing, and apparently in some scenarios, it'll not work on terminals of Windows.  So I've decided to leave it unimplemented. It will return None instead.
 
-#### Number function (Str) -> Int
+#### Number (Str) -> Int
 Syntax: `n:`<br/>
 Converts the given Str to an Int (isize). On failure, an error is raised.
 
@@ -214,7 +216,7 @@ n:"foo" [raises error]
 n:123 [this raises error as well but this behaviour is subjected to change]
 ```
 
-#### Text function (Int) -> Str
+#### Text (Int) -> Str
 Syntax `t:`<br/>
 Converts the given Int to Str. On failure, an error is raised.
 
@@ -228,7 +230,7 @@ p:a:.1 "1" [this should print 1231]
 t:"foo" [this raises error but this behaviour is subjected to change]
 ```
 
-#### EmptySlot Function () -> Int
+#### EmptySlot () -> Int
 Syntax: `~`<br/>
 Returns the first empty slot (the slot which is set to None). Starting from 0 to MAX.
 
@@ -242,7 +244,7 @@ s:2 20 [sets the value of slot 2 to 20]
 p:~ [still prints 1 because slot 1 is unused]
 ```
 
-#### Exit function
+#### Exit
 Syntax: `$`<br/>
 Halts the entire program immediately.
 
@@ -261,7 +263,7 @@ s:0 i
 p:"You didn't enter exit"
 ```
 
-#### CatchError function (Str, Value) -> Value | !
+#### CatchError (Str, Value) -> Value | !
 Syntax: `#:`<br/>
 This is a special kind of jump function.
 If an error is raised while the given value gets evaluated, it jumps to the given label while also setting the error code to slot `-1`.
@@ -278,7 +280,7 @@ p:.-1 [-1 as described above holds the error code]
 ```
 We'll talk about error codes later.
 
-#### ThrowError function (Str) -> !
+#### ThrowError (Str) -> !
 Syntax: `!:`<br/>
 Throws error with an arbitrary message.
 
@@ -304,7 +306,7 @@ w:"Got an error: "
 p:.-1
 ```
 
-#### Function function (Str) -> Value
+#### Function (Str) -> Value
 Syntax: `f:`<br/>
 Works just like jump function, except it returns back to where it started on encountering either EOF or a return function.
 On encountering EOF, the function returns None.
@@ -323,7 +325,7 @@ rewinds back to where the function was called
 ]
 ```
 
-#### Return function (Value)
+#### Return (Value)
 Syntax: `r:`<br/>
  This functions returns the given value, if it's invoked by a function, then it returns it's value to it, if it's invoked during the normal execution, the program halts. The given value does get returned, you can capture it if the script is invoked by another script, but that feature is yet to be implemented.
 
@@ -331,9 +333,21 @@ Syntax: `r:`<br/>
 r:"foo"
 ```
 
-
-
 ### Truthy and Falsy
 All numbers are truthy except for `0`.
 All strings are truthy except for an empty string.
 None is always falsy.
+
+### Comments
+`[` `]` are used to specifiy a comment. A comment can span multiple lines.
+```haskell
+s:10 "
+hi,
+I can
+span multiple lines
+" [
+just like strings
+I can also span multiple lines
+]
+```
+
