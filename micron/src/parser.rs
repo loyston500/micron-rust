@@ -297,6 +297,7 @@ pub fn parse_func_call(line: Vec<TokenInfo>) -> Result<(usize, Expr), ParseError
     }
 
     let mut i = 0;
+    let mut c = 0;
     let mut args = Vec::new();
 
     let count = match &token_line[0] {
@@ -365,8 +366,6 @@ pub fn parse_func_call(line: Vec<TokenInfo>) -> Result<(usize, Expr), ParseError
             }
         }
 
-        let mut c = 0;
-
         while c < count {
             match token_line.get(c + i) {
                 Some(token) => match token {
@@ -377,7 +376,7 @@ pub fn parse_func_call(line: Vec<TokenInfo>) -> Result<(usize, Expr), ParseError
                     Token::Idn(_) | Token::Eql | Token::Que | Token::Not | Token::Hsh => {
                         let (_i, _args) = parse_func_call(line[c + i..].to_vec())?;
                         args.push(_args);
-                        i += _i + 1;
+                        i += _i;
                     }
 
                     Token::Til => args.push(Expr::FunCall(Box::new(Fun::EmptySlot))),
@@ -452,5 +451,5 @@ pub fn parse_func_call(line: Vec<TokenInfo>) -> Result<(usize, Expr), ParseError
         ),
     };
 
-    Ok((i, Expr::FunCall(Box::new(fun))))
+    Ok((i + c - 1, Expr::FunCall(Box::new(fun))))
 }
