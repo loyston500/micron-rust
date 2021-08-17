@@ -1,4 +1,3 @@
-
 # micron-rust
 This variant of micron is derived from the original by @Z3RYX.<br/>
 This variant focuses more on strong typing and modularization by having slightly different behaviours of some specific instructions. Also, better errors.<br/>
@@ -6,6 +5,7 @@ Keep in mind that this implementation is still in development so some features a
 
 ## Table of contents
 - [micron-rust](#micron-rust)
+  * [Usage](#usage)
   * [Specification](#specification)
     + [Data Types](#data-types)
     + [Slots](#slots)
@@ -34,6 +34,17 @@ Keep in mind that this implementation is still in development so some features a
     + [Truthy and Falsy](#truthy-and-falsy)
     + [Comments](#comments)
     + [Errors](#errors)
+
+## Usage
+To build, you need Rust installed.
+```bash
+git clone https://github.com/loyston500/micron-rust
+cd micron-rust/micron
+cargo build --release
+target/release/micron # path of the executable
+# to run, you simply have to pass a file
+target/release/micron ../examples/mul.mc
+```
 
 ## Specification
 ###  Data Types
@@ -357,8 +368,8 @@ Each kind of error is associated with a unique Int.<br/>
 `TypeError` => `401`,  Raised when there's a type mismatch.<br/>
 `LabelError` => `402`, Raised when the label it's supposed to jump isn't defined.<br/>
 `ValueError` => `403`, Raised when the value is invalid or not supported.<br/>
-`NoSlotError` => `404`Raised if there are no empty slots available from 0 to MAX.<br/>
-`Error` => `400` Raised if there's an ambiguous error.<br/>
+`NoSlotError` => `404`, Raised if there are no empty slots available from 0 to MAX.<br/>
+`Error` => `400`, Raised if there's an ambiguous error.<br/>
 
 When an error is raised, the error code is set to slot `-1`
 
