@@ -551,6 +551,51 @@ pub fn interpret_fun_call(
             }
         }
 
+        Fun::Convert(expr) => {
+            let value = match expr {
+                Expr::Value(v) => v,
+                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+            };
+
+            match value {
+                Value::Str(ref s) => {
+                    if s.len() != 1 {
+                        return Err(Signal::Error(ErrorInfo::new(
+                            Error::ValueError(value.clone()),
+                            clone,
+                            Some(format!(
+                                "The Str should have exactly 1 char got {}",
+                                s.len()
+                            )),
+                        )));
+                    }
+
+                    let ch = s.chars().next().unwrap();
+
+                    return Ok(Value::Int(ch as isize));
+                }
+
+                Value::Int(int) => match char::from_u32(int as u32) {
+                    Some(ch) => return Ok(Value::Str(ch.to_string())),
+                    None => {
+                        return Err(Signal::Error(ErrorInfo::new(
+                            Error::ValueError(value),
+                            clone,
+                            Some(format!("Cannot convert Int {} to a char", int)),
+                        )))
+                    }
+                },
+
+                Value::None => {
+                    return Err(Signal::Error(ErrorInfo::new(
+                        Error::ValueError(value),
+                        clone,
+                        Some(format!("Cannot convert None value")),
+                    )))
+                }
+            }
+        }
+
         Fun::Return(expr) => {
             let value = match expr {
                 Expr::Value(v) => v,
@@ -598,10 +643,6 @@ pub fn interpret_fun_call(
 
         Fun::Exit => {
             exit(0);
-        }
-
-        _ => {
-            panic!("Interpretation of Fun {:?} is not implemented", fun);
         }
     }
 
