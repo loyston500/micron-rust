@@ -1,7 +1,7 @@
 // use std::env;
 use std::error::Error;
 use std::fs::File;
-use std::io::Read;
+use std::io::{self, Read};
 use std::process::exit;
 
 use clap::clap_app;
@@ -35,7 +35,7 @@ fn main() {
         (version: "1.0")
         (author: "LoystonLive")
         (about: "A micron rust variant")
-        (@arg FILE: +required "Sets the file to run")
+        (@arg FILE: "Sets the file to run")
         (@arg debug: -d --debug "Print parsing information")
         (@arg pretty: -p --pretty "Prettifies the debug")
         (@arg compileonly: --compileonly "Compiles but doesn't run")
@@ -51,8 +51,21 @@ fn main() {
             }
         }
     } else {
-        eprintln!("error: no file provided");
-        exit(1);
+        let mut buffer = Vec::new();
+
+        match io::stdin().read_to_end(&mut buffer) {
+            Ok(_) => match String::from_utf8(buffer) {
+                Ok(source) => (source, "<stdin>"),
+                Err(err) => {
+                    eprintln!("error: {}", err);
+                    exit(1);
+                }
+            },
+            Err(err) => {
+                eprintln!("error: {}", err);
+                exit(1);
+            }
+        }
     };
 
     let allow_debug = matches.is_present("debug");
