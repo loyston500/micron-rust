@@ -21,6 +21,7 @@ Keep in mind that this implementation is still in development so some features a
       - [If (Value, Value) -> Value | !](#if--value--value-----value----)
       - [Equal (Value, Value) -> Int](#equal--value--value-----int)
       - [Extract (Str, Int) -> Str](#extract--str--int-----str)
+      - [Convert (Value) -> Value](#convert--value-----value)
       - [Input () -> Str](#input-------str)
       - [KeyChar () -> Str](#keychar-------str)
       - [Number (Str) -> Int](#number--str-----int)
@@ -196,6 +197,19 @@ Example:
 p:x:"hello" 1 [prints e]
 p:x:"hello" 100 [prints just a newline because the extract function returns an empty string]
 p:x:"hello" "1" [raises error]
+```
+
+#### Convert (Value) -> Value
+Syntax: `c:`<br/>
+Used to convert Int to it's ASCII equivalent Str and vise versa.
+Passing None or invalid values will raise `ValueError`.
+
+Example:
+```r
+p:c:"f" [prints 102]
+p:c:420 [prints Ƥ]
+p:c:"ab" [value error is raised]
+p:c:999999 [value error is raised]
 ```
 
 #### Input () -> Str
