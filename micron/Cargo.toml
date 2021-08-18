@@ -8,3 +8,6 @@ edition = "2018"
 
 [dependencies]
 codespan-reporting = "0.11.1"
+
+[dependencies.clap]
+version = "3.0.0-beta.4"
