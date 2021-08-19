@@ -1,7 +1,7 @@
 // use std::env;
 use std::error::Error;
 use std::fs::File;
-use std::io::{self, Read};
+use std::io::{self, Read, Write};
 use std::process::exit;
 
 use clap::clap_app;
@@ -213,7 +213,20 @@ fn main() {
     };
 
     if !compile_only {
-        let result = interpreter::interpret(labels, instr_infos);
+        let mut stdout = |s| {
+            print!("{}", s);
+            Ok(())
+        };
+        let mut stdin = || {
+            let _ = io::stdout().flush();
+            let mut s = String::new();
+            match io::stdin().read_line(&mut s) {
+                Ok(_) => Ok(s),
+                Err(_) => Err(()),
+            }
+        };
+
+        let result = interpreter::interpret(labels, instr_infos, &mut stdout, &mut stdin);
 
         match result {
             Ok(_) => {}
