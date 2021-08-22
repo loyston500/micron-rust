@@ -2,8 +2,6 @@ use crate::errors::Code;
 use crate::parser::{Expr, Fun, Instr, InstrInfo, Value};
 use std::collections::HashMap;
 use std::fmt;
-use std::io;
-use std::io::Write;
 use std::process::exit;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -77,11 +75,18 @@ pub enum Signal {
 
 type LabelType = HashMap<String, usize>;
 type SlotType = HashMap<isize, Value>;
+type StdOutType = Result<(), ()>;
+type StdInType = Result<String, ()>;
 
-pub fn interpret(labels: LabelType, instr_infos: Vec<InstrInfo>) -> Result<(), InterpreterError> {
+pub fn interpret(
+    labels: LabelType,
+    instr_infos: Vec<InstrInfo>,
+    stdout: &mut dyn FnMut(String) -> StdOutType,
+    stdin: &mut dyn FnMut() -> StdInType,
+) -> Result<(), InterpreterError> {
     let mut slots: SlotType = HashMap::new();
 
-    match interpret_instrs(&instr_infos, &labels, &mut slots, 0) {
+    match interpret_instrs(&instr_infos, &labels, &mut slots, 0, stdout, stdin) {
         Ok(_) => {}
         Err(signal) => match signal {
             Signal::InterpreterError(interpreter_error) => {
@@ -100,6 +105,8 @@ pub fn interpret_instrs(
     labels: &LabelType,
     slots: &mut SlotType,
     mut i: usize,
+    stdout: &mut dyn FnMut(String) -> StdOutType,
+    stdin: &mut dyn FnMut() -> StdInType,
 ) -> Result<Value, Signal> {
     let mut instrs = Vec::new();
 
@@ -114,7 +121,7 @@ pub fn interpret_instrs(
             Instr::LabelPlaceHolder(..) => {}
 
             Instr::FunCall(fun) => {
-                match interpret_fun_call(fun.clone(), labels, slots, instr_infos) {
+                match interpret_fun_call(fun.clone(), labels, slots, instr_infos, stdout, stdin) {
                     Ok(_) => {}
                     Err(signal) => match signal {
                         Signal::InterpreterError(interpreter_error) => {
@@ -148,6 +155,8 @@ pub fn interpret_fun_call(
     labels: &LabelType,
     slots: &mut SlotType,
     instr_infos: &Vec<InstrInfo>,
+    stdout: &mut dyn FnMut(String) -> StdOutType,
+    stdin: &mut dyn FnMut() -> StdInType,
 ) -> Result<Value, Signal> {
     let clone = *fun.clone();
 
@@ -155,7 +164,9 @@ pub fn interpret_fun_call(
         Fun::Set(expr1, expr2) => {
             let value1 = match expr1 {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             let int = match value1 {
@@ -174,7 +185,9 @@ pub fn interpret_fun_call(
 
             let value2 = match expr2 {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             slots.insert(int, value2);
@@ -183,7 +196,9 @@ pub fn interpret_fun_call(
         Fun::Get(expr) => {
             let value = match expr {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             let int = match value {
@@ -209,7 +224,9 @@ pub fn interpret_fun_call(
         Fun::Jump(expr) => {
             let value = match expr {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             let string = match value {
@@ -241,7 +258,9 @@ pub fn interpret_fun_call(
         Fun::FunJump(expr) => {
             let value = match expr {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             let string = match value {
@@ -260,7 +279,7 @@ pub fn interpret_fun_call(
 
             match labels.get(&string) {
                 Some(i) => {
-                    let result = interpret_instrs(instr_infos, labels, slots, *i)?;
+                    let result = interpret_instrs(instr_infos, labels, slots, *i, stdout, stdin)?;
                     return Ok(result);
                 }
                 None => {
@@ -276,12 +295,16 @@ pub fn interpret_fun_call(
         Fun::Add(expr1, expr2) => {
             let value1 = match expr1 {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             let value2 = match expr2 {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             match (&value1, &value2) {
@@ -305,7 +328,9 @@ pub fn interpret_fun_call(
         Fun::CatchError(expr1, expr2) => {
             let value1 = match expr1 {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             let string = match value1 {
@@ -335,27 +360,32 @@ pub fn interpret_fun_call(
 
             let value2 = match expr2 {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => match interpret_fun_call(_fun, labels, slots, instr_infos) {
-                    Ok(v) => v,
-                    Err(signal) => match signal {
-                        Signal::Error(error_info) => {
-                            slots.insert(-1, Value::Int(error_info.error.error_code().as_isize()));
-                            return Err(Signal::Jump(i));
-                        }
+                Expr::FunCall(_fun) => {
+                    match interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin) {
+                        Ok(v) => v,
+                        Err(signal) => match signal {
+                            Signal::Error(error_info) => {
+                                slots.insert(
+                                    -1,
+                                    Value::Int(error_info.error.error_code().as_isize()),
+                                );
+                                return Err(Signal::Jump(i));
+                            }
 
-                        Signal::InterpreterError(interpreter_error) => {
-                            slots.insert(
-                                -1,
-                                Value::Int(
-                                    interpreter_error.error_info.error.error_code().as_isize(),
-                                ),
-                            );
-                            return Err(Signal::Jump(i));
-                        }
+                            Signal::InterpreterError(interpreter_error) => {
+                                slots.insert(
+                                    -1,
+                                    Value::Int(
+                                        interpreter_error.error_info.error.error_code().as_isize(),
+                                    ),
+                                );
+                                return Err(Signal::Jump(i));
+                            }
 
-                        _ => return Err(signal),
-                    },
-                },
+                            _ => return Err(signal),
+                        },
+                    }
+                }
             };
 
             return Ok(value2);
@@ -364,7 +394,9 @@ pub fn interpret_fun_call(
         Fun::ThrowError(expr) => {
             let value = match expr {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             let string = match value {
@@ -383,33 +415,39 @@ pub fn interpret_fun_call(
         Fun::Print(expr) => {
             let value = match expr {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
-            match value {
-                Value::Str(s) => println!("{}", s),
-                Value::Int(int) => println!("{}", int),
-                Value::None => println!("None"),
-            }
+            let _ = match value {
+                Value::Str(s) => stdout(format!("{}\n", s)),
+                Value::Int(int) => stdout(format!("{}\n", int)),
+                Value::None => stdout(format!("None\n")),
+            };
         }
 
         Fun::Write(expr) => {
             let value = match expr {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
-            match value {
-                Value::Str(s) => print!("{}", s),
-                Value::Int(int) => print!("{}", int),
-                Value::None => print!("None"),
-            }
+            let _ = match value {
+                Value::Str(s) => stdout(format!("{}", s)),
+                Value::Int(int) => stdout(format!("{}", int)),
+                Value::None => stdout(format!("None")),
+            };
         }
 
         Fun::If(expr1, expr2) => {
             let value1 = match expr1 {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             let condit = match value1 {
@@ -421,7 +459,9 @@ pub fn interpret_fun_call(
             if condit {
                 let value = match expr2 {
                     Expr::Value(v) => v,
-                    Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                    Expr::FunCall(_fun) => {
+                        interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                    }
                 };
 
                 return Ok(value);
@@ -431,12 +471,16 @@ pub fn interpret_fun_call(
         Fun::Equal(expr1, expr2) => {
             let value1 = match expr1 {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             let value2 = match expr2 {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             match (&value1, &value2) {
@@ -470,12 +514,16 @@ pub fn interpret_fun_call(
         Fun::Extract(expr1, expr2) => {
             let value1 = match expr1 {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             let value2 = match expr2 {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             match (&value1, &value2) {
@@ -502,7 +550,9 @@ pub fn interpret_fun_call(
         Fun::Text(expr) => {
             let value = match expr {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             match &value {
@@ -523,7 +573,9 @@ pub fn interpret_fun_call(
         Fun::Number(expr) => {
             let value = match expr {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             match &value {
@@ -599,18 +651,17 @@ pub fn interpret_fun_call(
         Fun::Return(expr) => {
             let value = match expr {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             return Err(Signal::Return(value));
         }
 
         Fun::Input => {
-            let mut s = String::new();
-
-            let _ = io::stdout().flush();
-            match io::stdin().read_line(&mut s) {
-                Ok(_) => {}
+            let s = match stdin() {
+                Ok(s) => s,
                 Err(_) => {
                     return Err(Signal::Error(ErrorInfo::new(
                         Error::Error(format!("Failed to receive an input")),
@@ -618,7 +669,7 @@ pub fn interpret_fun_call(
                         None,
                     )))
                 }
-            }
+            };
 
             let input = s.trim().to_string();
 

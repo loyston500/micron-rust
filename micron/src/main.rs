@@ -1,9 +1,10 @@
-use std::env;
+// use std::env;
 use std::error::Error;
 use std::fs::File;
-use std::io::Read;
+use std::io::{self, Read, Write};
 use std::process::exit;
 
+use clap::clap_app;
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 use codespan_reporting::files::SimpleFiles;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
@@ -30,19 +31,65 @@ fn file_read(file_name: &str) -> Result<String, Box<dyn Error>> {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect::<Vec<String>>();
+    let matches = clap_app!(micron =>
+        (version: "1.0")
+        (author: "LoystonLive")
+        (about: "A micron rust variant")
+        (@arg FILE: "Sets the file to run")
+        (@arg debug: -d --debug "Print parsing information")
+        (@arg pretty: -p --pretty "Prettifies the debug")
+        (@arg compileonly: --compileonly "Compiles but doesn't run")
+    )
+    .get_matches();
 
-    if args.len() < 2 {
-        println!("File not provided!");
-        exit(1);
+    let (source, file_name) = if let Some(file_name) = matches.value_of("FILE") {
+        match file_read(file_name) {
+            Ok(source) => (source, file_name),
+            Err(err) => {
+                eprintln!("error: {}", err);
+                exit(1);
+            }
+        }
+    } else {
+        let mut buffer = Vec::new();
+
+        match io::stdin().read_to_end(&mut buffer) {
+            Ok(_) => match String::from_utf8(buffer) {
+                Ok(source) => (source, "<stdin>"),
+                Err(err) => {
+                    eprintln!("error: {}", err);
+                    exit(1);
+                }
+            },
+            Err(err) => {
+                eprintln!("error: {}", err);
+                exit(1);
+            }
+        }
+    };
+
+    let allow_debug = matches.is_present("debug");
+    let prettify = matches.is_present("pretty");
+    let compile_only = matches.is_present("compileonly");
+
+    macro_rules! debug {
+        ($e:expr) => {
+            if allow_debug {
+                if prettify {
+                    println!("{:#?}", $e);
+                } else {
+                    println!("{:?}", $e);
+                }
+            }
+        };
     }
 
-    let file_name = &args[1];
-    let source = file_read(file_name).unwrap(); //.expect("File not found.")
     let mut files = SimpleFiles::new();
     let file_id = files.add(file_name, &source);
     let source_chars = scanner::Char::from_source(&source);
     let token_infos = tokenizer::tokenize(source_chars);
+
+    debug!(&token_infos);
 
     let token_infos = match token_infos {
         Ok(ok) => ok,
@@ -69,6 +116,8 @@ fn main() {
     };
 
     let instr_infos = parser::parse(token_infos);
+
+    debug!(&instr_infos);
 
     let (labels, instr_infos) = match instr_infos {
         Ok(ok) => ok,
@@ -163,50 +212,65 @@ fn main() {
         }
     };
 
-    let result = interpreter::interpret(labels, instr_infos);
+    if !compile_only {
+        let mut stdout = |s| {
+            print!("{}", s);
+            Ok(())
+        };
+        let mut stdin = || {
+            let _ = io::stdout().flush();
+            let mut s = String::new();
+            match io::stdin().read_line(&mut s) {
+                Ok(_) => Ok(s),
+                Err(_) => Err(()),
+            }
+        };
 
-    match result {
-        Ok(_) => {}
-        Err(interpreter_error) => {
-            let error_info = &interpreter_error.error_info;
-            let instr_info = &interpreter_error.instr_info;
-            let fun = &error_info.fun;
+        let result = interpreter::interpret(labels, instr_infos, &mut stdout, &mut stdin);
 
-            let start = instr_info.start;
-            let end = instr_info.end;
+        match result {
+            Ok(_) => {}
+            Err(interpreter_error) => {
+                let error_info = &interpreter_error.error_info;
+                let instr_info = &interpreter_error.instr_info;
+                let fun = &error_info.fun;
 
-            let label_msg = match &error_info.error {
-                interpreter::Error::TypeError { expected, got } => {
-                    format!("Function `{}` expected {} got {}", fun, &expected, &got)
-                }
-                interpreter::Error::LabelError(s) => {
-                    format!("Got a jump signal to an undefined label `{}`", &s)
-                }
-                interpreter::Error::NoSlotError => format!("No empty slot found"),
-                interpreter::Error::ValueError(val) => {
-                    format!("Function `{}`, {} is a bad value", fun, val)
-                }
-                interpreter::Error::Error(err) => format!("Err: {}", err),
-            };
+                let start = instr_info.start;
+                let end = instr_info.end;
 
-            let label = Label::primary(file_id, start..end).with_message(label_msg);
+                let label_msg = match &error_info.error {
+                    interpreter::Error::TypeError { expected, got } => {
+                        format!("Function `{}` expected {} got {}", fun, &expected, &got)
+                    }
+                    interpreter::Error::LabelError(s) => {
+                        format!("Got a jump signal to an undefined label `{}`", &s)
+                    }
+                    interpreter::Error::NoSlotError => format!("No empty slot found"),
+                    interpreter::Error::ValueError(val) => {
+                        format!("Function `{}`, {} is a bad value", fun, val)
+                    }
+                    interpreter::Error::Error(err) => format!("Err: {}", err),
+                };
 
-            let notes = match &error_info.note {
-                Some(s) => vec![s.to_string()],
-                None => vec![],
-            };
+                let label = Label::primary(file_id, start..end).with_message(label_msg);
 
-            let diagnostic = Diagnostic::error()
-                .with_message(format!("{}", &error_info.error))
-                .with_code(format!("{}", &error_info.error.error_code()))
-                .with_labels(vec![label])
-                .with_notes(notes);
+                let notes = match &error_info.note {
+                    Some(s) => vec![s.to_string()],
+                    None => vec![],
+                };
 
-            let writer = StandardStream::stderr(ColorChoice::Always);
-            let config = codespan_reporting::term::Config::default();
+                let diagnostic = Diagnostic::error()
+                    .with_message(format!("{}", &error_info.error))
+                    .with_code(format!("{}", &error_info.error.error_code()))
+                    .with_labels(vec![label])
+                    .with_notes(notes);
 
-            term::emit(&mut writer.lock(), &config, &files, &diagnostic).unwrap();
-            exit(1);
+                let writer = StandardStream::stderr(ColorChoice::Always);
+                let config = codespan_reporting::term::Config::default();
+
+                term::emit(&mut writer.lock(), &config, &files, &diagnostic).unwrap();
+                exit(1);
+            }
         }
     }
 }
