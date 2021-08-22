@@ -37,7 +37,7 @@ Keep in mind that this implementation is still in development so some features a
     + [Errors](#errors)
 
 ## Usage
-To build, you need Rust installed.
+To build, you need Rust 1.54.0+ installed.
 ```bash
 git clone https://github.com/loyston500/micron-rust
 cd micron-rust/micron
