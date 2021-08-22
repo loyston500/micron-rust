@@ -606,7 +606,9 @@ pub fn interpret_fun_call(
         Fun::Convert(expr) => {
             let value = match expr {
                 Expr::Value(v) => v,
-                Expr::FunCall(_fun) => interpret_fun_call(_fun, labels, slots, instr_infos)?,
+                Expr::FunCall(_fun) => {
+                    interpret_fun_call(_fun, labels, slots, instr_infos, stdout, stdin)?
+                }
             };
 
             match value {
